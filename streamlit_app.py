@@ -2,7 +2,7 @@ import streamlit as st
 import openai
 
 # Initialize OpenAI client
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+client = openai.Client(api_key=st.secrets["OPENAI_API_KEY"])
 
 # Set app title
 st.title("SOC-Support-Desk")
@@ -19,11 +19,13 @@ for message in st.session_state.messages:
 # Function to get OpenAI response
 def get_response(prompt, history):
     messages = [{"role": "system", "content": "You are a cybersecurity expert specializing in ethical hacking, penetration testing, incident management, and general cybersecurity solutions. Provide expert-level responses to any cybersecurity-related queries."}] + history + [{"role": "user", "content": prompt}]
-    response = openai.ChatCompletion.create(
+    
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=messages
     )
-    return response["choices"][0]["message"]["content"]
+    
+    return response.choices[0].message.content
 
 # User input
 user_input = st.chat_input("Type your cybersecurity question...")
