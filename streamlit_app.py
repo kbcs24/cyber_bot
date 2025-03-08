@@ -1,11 +1,11 @@
 import streamlit as st
-from openai import OpenAI
+import openai
 
-# Initialize OpenAI client using Streamlit's secrets
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# Initialize OpenAI client
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-# Title of the app
-st.title("Doctor-bot")
+# Set app title
+st.title("SOC-Support-desk")
 
 # Initialize session state for chat history
 if "messages" not in st.session_state:
@@ -13,37 +13,30 @@ if "messages" not in st.session_state:
 
 # Display chat history
 for message in st.session_state.messages:
-    role, content = message["role"], message["content"]
-    with st.chat_message(role):
-        st.markdown(content)
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-# Collect user input for symptoms
-user_input = st.chat_input("Describe your symptoms here...")
-
-# Function to get a response from OpenAI with health advice
-def get_response(prompt):
-    # Here, you may include a more specific prompt or fine-tune the assistant's instructions to provide general remedies
-    response = client.chat.completions.create(
+# Function to get OpenAI response
+def get_response(prompt, history):
+    messages = [{"role": "system", "content": "You are a cybersecurity expert specializing in ethical hacking, penetration testing, incident management, and general cybersecurity solutions. Provide expert-level responses to any cybersecurity-related queries."}] + history + [{"role": "user", "content": prompt}]
+    response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[
-            {"role": m["role"], "content": m["content"]}
-            for m in st.session_state.messages
-        ] + [{"role": "user", "content": prompt}]
+        messages=messages
     )
-    # Access the content directly as an attribute
-    return response.choices[0].message.content
+    return response["choices"][0]["message"]["content"]
 
-# Process and display response if there's input
+# User input
+user_input = st.chat_input("Type your cybersecurity question...")
 if user_input:
-    # Append user's message
+    # Append user message
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
-
-    # Generate assistant's response
-    assistant_prompt = f"User has reported the following symptoms: {user_input}. Provide a general remedy or advice."
-    assistant_response = get_response(assistant_prompt)
-    st.session_state.messages.append({"role": "assistant", "content": assistant_response})
     
+    # Get assistant response
+    response = get_response(user_input, st.session_state.messages)
+    
+    # Append assistant message
+    st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
-        st.markdown(assistant_response)
+        st.markdown(response)
